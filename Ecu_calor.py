@@ -62,10 +62,7 @@ def ecu_calor(areaPI, coefDT, tempiOBJ, tmpEXT, n):
     heat_frames = solve_heat(heat_frames, area_bool)
     # lo pasamos a grados celsius
     heat_frames -= 273.15
-
-    # Animación para ver como se comporta la ecuación
-    mapa_final = plt.get_cmap('jet')
-
+    
     return heat_frames[1]  # Ajustar
 
 
@@ -77,7 +74,6 @@ def main():
     temp_amb = 25
     mat_temps = ecu_calor(radio_pi, coef, temp_fuego, temp_amb, n)
     print(mat_temps)
-    # Vectorizar matriz de temperaturas
 
 if __name__ == "__main__":
     main()
