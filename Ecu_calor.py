@@ -3,7 +3,6 @@ import numpy as np
 
 def ecu_calor(areaPI, coefDT, tempiOBJ, tmpEXT, n):
     # Indexación booleana de matriz de área asociada a punto inicial
-    # Tiene que ser de n*n y entrar en blanco y negro
     area_bool = areaPI < 0.9
 
     # Coeficiente de difusividad térmica para madera
