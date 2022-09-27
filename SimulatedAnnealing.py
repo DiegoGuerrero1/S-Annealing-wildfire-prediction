@@ -163,7 +163,7 @@ def addHist(hist, X, Y, Z, x, y, z):
     ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.gist_stern
                     , linewidth=1, antialiased=True)
     # Plotting first point
-    ax.scatter(coors_x[0], coors_y[0], coors_z[0], c='cyan', marker="d", linewidth=60)
+    ax.scatter(coors_x[0], coors_y[0], coors_z[0], c='orange', marker="d", linewidth=60)
 
     # Plotting path taken
     ax.scatter(coors_x, coors_y, coors_z, c='red', marker="d", linewidth=5)
@@ -324,7 +324,7 @@ def main():
         lcolor = np.linspace(0,1,len(heatAhist))
         baseColor  = (lcolor[i], 0.2, 0.5)
         ax.scatter3D(x[heatAhist[i]], y[heatAhist[i]], z[heatAhist[i]] + 20, c=baseColor, marker="v", linewidth=60)
-    ax.scatter3D(x[heatAhist[-1]], y[heatAhist[-1]], z[heatAhist[-1]] + 20, c='red', marker="*", linewidth=70)
+    ax.scatter3D(x[heatAhist[-1]], y[heatAhist[-1]], z[heatAhist[-1]] + 20, c='green', marker="*", linewidth=70)
     plt.show()
     # Done
 
