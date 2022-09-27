@@ -326,7 +326,7 @@ def main():
         ax.scatter3D(x[heatAhist[i]], y[heatAhist[i]], z[heatAhist[i]] + 20, c=baseColor, marker="v", linewidth=60)
     ax.scatter3D(x[heatAhist[-1]], y[heatAhist[-1]], z[heatAhist[-1]] + 20, c='red', marker="*", linewidth=70)
     plt.show()
-
+    # Done
 
 if __name__ == "__main__":
     main()
