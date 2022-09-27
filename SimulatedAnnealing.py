@@ -9,7 +9,8 @@ Output: Maxima of fire distribution
 
 import numpy as np
 import matplotlib
-from matplotlib import cm
+# import numba
+from matplotlib import cm, animation
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import griddata
 
@@ -58,20 +59,23 @@ def costFunction(wind, Tmin, Tmax, size):
     return costF
 
 
-def simAnn(funVector, Tmin, Tmax, TempFunc, cInit, maxIter):
+def simAnn(funVector, TempFunc, cInit, maxIter):
+    velViento = np.random.randint(4, 16, size=(len(TempFunc)))
     # Definition of the simulated annealing method
     c = cInit  # Initial point
     iter = 0  # Iteration variable
     history = np.zeros(maxIter)  # Array for storing candidates
+    alpha = 10                   # Amplification parameter for wind (How much does it affect)
+
     while iter < maxIter:
-        for T in range(Tmin, Tmax):
+        for T in range(1,len(funVector)):
             Ec = funVector[c]  # Starting value
-            n = nextPoint(0, Tmax)  # New random position
+            n = nextPoint(0, len(funVector))  # New random position
             En = funVector[n]  # New random value
             deltaE = En - Ec  # Difference between the initial and the random value
             if deltaE < 0:  # If maxima: > 0 , If minima: < 0
                 c = n  # The random point becomes our initial point
-            elif probFun(deltaE, TempFunc[T]) > np.random.random():
+            elif probFun(deltaE, TempFunc[T]*alpha*(velViento[T]-velViento[T - 1])) > np.random.random():
                 c = n  # Statistical consideration
         history[iter] = c
         iter += 1
@@ -79,7 +83,7 @@ def simAnn(funVector, Tmin, Tmax, TempFunc, cInit, maxIter):
     return c, history
 
 
-def simAnnParallel(funVector, Tmin, Tmax, cInit, maxIter):
+def simAnnParallel(funVector, Tmin, Tmax, cInit, maxIter):  # Deprecated
     c = cInit
     iter = 0
     while (iter < maxIter):
@@ -97,7 +101,7 @@ def simAnnParallel(funVector, Tmin, Tmax, cInit, maxIter):
     return c, 10
 
 
-def neighAnn(z, Tmax, Tmin, tempfunc, cinit, maxI, X, Y, Z, x, y):
+def neighAnn(z, x, y, tempfunc, cinit, maxI, X, Y, Z, ):
     # Simulated Annealing with multiple initial points
     coors_x = []
     coors_y = []
@@ -110,7 +114,7 @@ def neighAnn(z, Tmax, Tmin, tempfunc, cinit, maxI, X, Y, Z, x, y):
     for i in range(npoint):
         print("Da un punto inicial 0 a ", len(z))
         valor_k = int(input())
-        min, hist = simAnn(z, Tmin, Tmax, tempfunc, cinit, maxI)
+        min, hist = simAnn(z, tempfunc, cinit, maxI)
         print('Primer punto: z[', min, ']=', z[min])
         coors_x.append(x[int(min)])
         coors_y.append(y[int(min)])
@@ -125,6 +129,19 @@ def neighAnn(z, Tmax, Tmin, tempfunc, cinit, maxI, X, Y, Z, x, y):
                     , linewidth=1, antialiased=True)
     ax.scatter(coors_x, coors_y, coors_z, c='orchid', marker="D", linewidth=40)
     plt.show()
+
+
+def plot3D(z, x, y, Z, X, Y, cinit):
+    fig = plt.figure()
+    ax = Axes3D(fig, auto_add_to_figure=False)
+    fig.add_axes(ax)
+    ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.gist_stern
+                    , linewidth=1, antialiased=True)
+    ptoMin = [x[cinit], y[cinit], z[cinit]]
+    plt.show()
+
+    print('punto minimo en :', ptoMin)
+    ax.scatter3D(ptoMin[0], ptoMin[1], ptoMin[2] + 20, c='green', marker="X", linewidth=30)
 
 
 def addHist(hist, X, Y, Z, x, y, z):
@@ -156,6 +173,90 @@ def addHist(hist, X, Y, Z, x, y, z):
     plt.show()  # Para que la ventana de visualización permanezca estática
 
 
+# Principal method. arguments: initial point and size of the arrays (10)
+def heat_equation_vector(k, n):
+    # Uses k and n to build matrix representing the initial point and its surroundings
+    def create_area_pi():
+        area_pto_ini = np.zeros(n * n)
+        area_pto_ini[k] = 1
+
+        if k > 0:
+            area_pto_ini[k - 1] = 1
+        if k < len(area_pto_ini):
+            area_pto_ini[k + 1] = 1
+        if k >= n:
+            area_pto_ini[k - n] = 1
+        if k >= n - 1:
+            area_pto_ini[k - n - 1] = 1
+        if k >= n + 1:
+            area_pto_ini[k - n + 1] = 1
+        if k < len(area_pto_ini) - n - 1:
+            area_pto_ini[k + n - 1] = 1
+        if k < len(area_pto_ini) - n + 1:
+            area_pto_ini[k + n + 1] = 1
+        if k < len(area_pto_ini) - n:
+            area_pto_ini[k + n] = 1
+        mat_area_pi = np.reshape(area_pto_ini, (n, n))
+        return mat_area_pi
+
+    print('Initial temperature')
+
+    # Recibes area of initial point matrix and substitutes with fire and surroundings temperatures
+    def sust_temps(area_pi, temp_fuego, temp_ext):
+        area_bool = area_pi > 0.9
+        temp_pt_ini = temp_fuego
+        tmp_area = temp_ext
+        T = area_pi + tmp_area
+        T[area_bool] = temp_pt_ini
+        return T
+
+    # Turns a matrix into a vector. Necessary for method output
+    def vectorize_matrix(A):
+        AvSize = len(A) * len(A)
+        Av = np.zeros(AvSize)
+        for i in range(n):
+            for j in range(n):
+                Av[i * n + j] = A[i][j]
+        return Av
+
+    # For loops solving numerically for heat equation
+    def heat_equation(T, maxIter):
+        delta = 1
+
+        for iteration in range(0, maxIter):
+            for i in range(1, n - 1, delta):
+                for j in range(1, n - 1, delta):
+                    T[i, j] = 0.25 * (T[i + 1][j] + T[i - 1][j] + T[i][j + 1] + T[i][j - 1])
+        return vectorize_matrix(T)
+
+    fire_temperature = 1000
+    surroundings_temperature = 30
+    iterations = 15
+    area_initial_point = create_area_pi()
+    temperature_matrix = sust_temps(area_initial_point, fire_temperature, surroundings_temperature)
+    heat_vector = heat_equation(temperature_matrix, iterations)
+    print('Heat vector:', heat_vector)
+
+    return heat_vector
+
+
+def heatAnn(funVector, cInit, maxIter, lMat):
+    print('Ingresar número de deltas de tiempo')
+    timeIterator = int(input())
+    cfin = 11111111111111111111111111
+    maximaPoints = []
+    for i in range(timeIterator):
+        newTemp = heat_equation_vector(cInit, lMat)
+        cNew, history = simAnn(funVector, newTemp, cInit, maxIter)
+        cfin = cNew
+        maximaPoints.append(cNew)
+
+    return cfin, maximaPoints
+
+
+# SUICIDE SECTION
+
+
 def main():
     # Basic variables
     l = 100  # length
@@ -176,7 +277,7 @@ def main():
     ### Starts simulated Annealing
 
     # Single evaluation
-    cpoint, hist = simAnn(z, Tmin, Tmax, costfn, cinit, tol)
+    cpoint, hist = simAnn(z, costfn, cinit, tol)
 
     ## Gabo graph
     # construcción de la grilla 2D
@@ -188,6 +289,7 @@ def main():
 
     # interpolación
     # Puntos, valores, xi, método
+
     Z = griddata((x, y,), z, (xi[None, :], yi[:, None]), method='cubic')
 
     fig = plt.figure()
@@ -199,14 +301,31 @@ def main():
     plt.show()
 
     print('pintos minimos en :', ptoMin)
-    ax.scatter3D(ptoMin[0], ptoMin[1], ptoMin[2] + 20, c='red', marker="X", linewidth=30)
+    ax.scatter3D(ptoMin[0], ptoMin[1], ptoMin[2] + 20, c='red', marker="d", linewidth=60)
 
     ### Additional Features
     ## Multiple search
-    neighAnn(z, Tmax, Tmin, costfn, cinit, tol, X, Y, Z, x, y)
+    neighAnn(z, x, y, costfn, cinit, tol, X, Y, Z)
 
     ## Show History
     addHist(hist, X, Y, Z, x, y, z)
+
+    ## Alongside heat equation
+
+    cmax, heatAhist = heatAnn(z, cinit, 1000, l)
+    print('Maxima index using heat equation:', heatAhist)
+    fig = plt.figure()
+    ax = Axes3D(fig, auto_add_to_figure=False)
+    fig.add_axes(ax)
+    ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.gist_stern
+                    , linewidth=1, antialiased=True)
+    ptoMin = [x[cmax], y[cmax], z[cmax]]
+    for i in range(len(heatAhist)-1):
+        lcolor = np.linspace(0,1,len(heatAhist))
+        baseColor  = (lcolor[i], 0.2, 0.5)
+        ax.scatter3D(x[heatAhist[i]], y[heatAhist[i]], z[heatAhist[i]] + 20, c=baseColor, marker="v", linewidth=60)
+    ax.scatter3D(x[heatAhist[-1]], y[heatAhist[-1]], z[heatAhist[-1]] + 20, c='red', marker="*", linewidth=70)
+    plt.show()
 
 
 if __name__ == "__main__":
