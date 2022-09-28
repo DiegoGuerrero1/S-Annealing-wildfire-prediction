@@ -1,13 +1,15 @@
 """
 Simulated Annealing Algorithm for wildfire spread on 3D surfaces
-Written by J. Diego Guerrero Morales, Gabriel Peytral Borja
-Contact: diegoguerrero@comunidad.unam.mx, gabrielpeytral@comunidad.unam.mx
+Written by J. Diego Guerrero Morales
+Contact: diegoguerrero@comunidad.unam.mx
+Modified by Gabriel Peytral Borja
 Inputs: A vectorized Matrix representation of a three-dimensional function
 Output: Maxima of fire distribution
 """
 
 import numpy as np
 import matplotlib
+# import numba
 from matplotlib import cm, animation
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import griddata
