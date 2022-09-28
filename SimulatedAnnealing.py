@@ -30,6 +30,7 @@ def probFun(deltaE, T):
     return prob
 
 
+
 def simAnn(funVector, TempFunc, cInit, maxIter):
     velViento = np.random.randint(4, 16, size=(len(TempFunc)))
     # Definition of the simulated annealing method
