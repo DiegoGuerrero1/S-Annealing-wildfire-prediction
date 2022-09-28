@@ -36,25 +36,7 @@ def ecu_calor(areaPI, coefDT, tempiOBJ, tmpEXT, n):
     dt_madera * dt / dx ** 2
 
     # Función para el método numérico
-    def solve_heat(heatmap, hay_esf):
-        cs = heatmap[0].copy()  # Estado actual (current state)
-        length = len(cs[0])
-        cf = 0  # frame actual
-        for t in range(1, times):
-            ns = cs.copy()  # estado nuevo
-            for i in range(1, length - 1):
-                for j in range(1, length - 1):
-                    if hay_esf[j][i]:
-                        a = dt_madera
-                        ns[j][i] = cs[j][i] + a * dt / dx ** 2 * (cs[j + 1][i] + cs[j - 1][i] + \
-                                                                  cs[j][i + 1] + cs[j][i - 1] - \
-                                                                  4 * cs[j][i])
-            cs = ns.copy()
-            if t % f == 0:
-                cf = cf + 1
-                heatmap[cf] = cs
 
-        return heatmap
 
     # LLamamos la función que aprovecha indexación booleana para distinguir
     # sobre que partes del arreglo se tiene que iterar

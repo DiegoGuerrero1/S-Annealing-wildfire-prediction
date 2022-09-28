@@ -30,35 +30,6 @@ def probFun(deltaE, T):
     return prob
 
 
-def vectorize(matrix):
-    # Vectorize a matrix
-    n = len(matrix)
-    matrixB = np.zeros_like(matrix)
-    for i in range(n):
-        for k in range(n):
-            matrixB[n * i + k] = matrix[i][k]
-    return matrixB
-
-
-def repmat(item, f):
-    # Create a matrix filled with an item
-    matOut = np.zeros(f)
-    for i in range(f):
-        matOut[i] = item
-    return matOut
-
-
-def costFunction(wind, Tmin, Tmax, size):
-    # Cost function definition, uses speed wind an assumes a parabolic growth of temperature
-    costF = np.zeros(size)
-    temp = costF
-    for T in range(Tmin, Tmax):
-        temp[T] = 2*T  # Parabolic temperature
-
-        costF = temp * wind[T] / wind[0]+0.001  # Adding contribution of wind speed
-    return costF
-
-
 def simAnn(funVector, TempFunc, cInit, maxIter):
     velViento = np.random.randint(4, 16, size=(len(TempFunc)))
     # Definition of the simulated annealing method
@@ -75,30 +46,13 @@ def simAnn(funVector, TempFunc, cInit, maxIter):
             deltaE = En - Ec  # Difference between the initial and the random value
             if deltaE < 0:  # If maxima: > 0 , If minima: < 0
                 c = n  # The random point becomes our initial point
-            elif probFun(deltaE, TempFunc[T]*alpha*(velViento[T]-velViento[T - 1])) > np.random.random():
+            elif probFun(deltaE, TempFunc[T]*alpha*(velViento[T]-velViento[T - 1])+1) > np.random.random():
                 c = n  # Statistical consideration
         history[iter] = c
         iter += 1
 
     return c, history
 
-
-def simAnnParallel(funVector, Tmin, Tmax, cInit, maxIter):  # Deprecated
-    c = cInit
-    iter = 0
-    while (iter < maxIter):
-        for k in range(len(c)):
-            for T in range(Tmin, Tmax):
-                Ec = funVector[c[k]]
-                n = nextPoint(0, len(funVector))  # New random position
-                En = funVector[n]
-                deltaE = En - Ec  # Difference between the initial and the random position
-                if deltaE < 0:  # If maxima: > 0 , If minima: < 0
-                    c[k] = n  # The random point becomes our initial point
-                elif probFun(deltaE, T) > np.random.random():
-                    c[k] = n  # Statistical consideration.
-            iter += 1
-    return c, 10
 
 
 def neighAnn(z, x, y, tempfunc, cinit, maxI, X, Y, Z, ):
@@ -127,7 +81,7 @@ def neighAnn(z, x, y, tempfunc, cinit, maxI, X, Y, Z, ):
     fig.add_axes(ax)
     ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.gist_stern
                     , linewidth=1, antialiased=True)
-    ax.scatter(coors_x, coors_y, coors_z, c='orchid', marker="D", linewidth=40)
+    ax.scatter(coors_x, coors_y, coors_z, c='green', marker="X", linewidth=40)
     plt.show()
 
 
@@ -138,12 +92,9 @@ def plot3D(z, x, y, Z, X, Y, cinit):
     ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.gist_stern
                     , linewidth=1, antialiased=True)
     ptoMin = [x[cinit], y[cinit], z[cinit]]
-    plt.show()
-
     print('punto minimo en :', ptoMin)
     ax.scatter3D(ptoMin[0], ptoMin[1], ptoMin[2] + 20, c='green', marker="X", linewidth=30)
-
-
+    plt.show()
 def addHist(hist, X, Y, Z, x, y, z):
     # Show the record of candidates of a simulated annealing result
     coors_x = []
@@ -240,46 +191,39 @@ def heat_equation_vector(k, n):
     return heat_vector
 
 
-def heatAnn(funVector, cInit, maxIter, lMat):
-    print('Ingresar número de deltas de tiempo')
+def heatAnn(funVector, cInit, maxIter, lMat):           # Simulated annealing with temperatures defined by heat equation
+    print('Please write the number of deltas of time')
     timeIterator = int(input())
-    cfin = 11111111111111111111111111
+    initPoint = cInit
     maximaPoints = []
     for i in range(timeIterator):
-        newTemp = heat_equation_vector(cInit, lMat)
+        newTemp = heat_equation_vector(initPoint, lMat)
         cNew, history = simAnn(funVector, newTemp, cInit, maxIter)
-        cfin = cNew
+        initPoint = cNew
+
         maximaPoints.append(cNew)
 
-    return cfin, maximaPoints
-
-
-# SUICIDE SECTION
+    return initPoint, maximaPoints
 
 
 def main():
     # Basic variables
     l = 100  # length
-    x = np.random.randint(0, 100, l)
-    y = np.random.randint(0, 100, l)
-    z = np.random.randint(0, 100, l)
+    x = np.random.randint(0, 100, l) # Array of x values
+    y = np.random.randint(0, 100, l) # Array of z values
+    z = np.random.randint(0, 100, l) # Array of y values
 
     # Constraint variables
-    Tmax = l
-    Tmin = 0
-    tol = 1000
-    cinit = 3
+    maxIterations = 1000
+    print('Write the initial point:')
+    cinit = int(input()) # Initial point
 
-    # Cost variables
-    velViento = np.random.randint(4, 16, size=(Tmax))
-    costfn = costFunction(velViento, Tmin, Tmax, l)
-
-    ### Starts simulated Annealing
+    ### Single simulated Annealing
 
     # Single evaluation
-    cpoint, hist = simAnn(z, costfn, cinit, tol)
+    cpoint, hist = simAnn(z, heat_equation_vector(cinit, l), cinit, maxIterations) # Returns the maximum point and the history of candidates
 
-    ## Gabo graph
+    ## Graphing
     # construcción de la grilla 2D
     xi = np.linspace(np.amin(x), np.amax(x))
     print('Gridd :', np.amin(x), ',')
@@ -298,19 +242,21 @@ def main():
     ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.gist_stern
                     , linewidth=1, antialiased=True)
     ptoMin = [x[cinit], y[cinit], z[cinit]]
+    ax.scatter3D(ptoMin[0], ptoMin[1], ptoMin[2] + 20, c='green', marker="d", linewidth=60)
     plt.show()
 
     print('pintos minimos en :', ptoMin)
-    ax.scatter3D(ptoMin[0], ptoMin[1], ptoMin[2] + 20, c='red', marker="d", linewidth=60)
+
 
     ### Additional Features
+
     ## Multiple search
-    neighAnn(z, x, y, costfn, cinit, tol, X, Y, Z)
+    neighAnn(z, x, y, heat_equation_vector(cinit,l), cinit, maxIterations, X, Y, Z)
 
     ## Show History
     addHist(hist, X, Y, Z, x, y, z)
 
-    ## Alongside heat equation
+    ## Alongside heat equation ***** Experimental ********
 
     cmax, heatAhist = heatAnn(z, cinit, 1000, l)
     print('Maxima index using heat equation:', heatAhist)
